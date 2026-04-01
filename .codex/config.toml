@@ -1,0 +1,16 @@
+model = "gpt-5.3-codex"
+reasoning_effort = "medium"
+
+[profiles.default]
+model = "gpt-5.3-codex"
+reasoning_effort = "medium"
+
+[profiles.architecture]
+model = "gpt-5.3-codex"
+reasoning_effort = "high"
+
+[profiles.refactor]
+model = "gpt-5.3-codex"
+reasoning_effort = "medium"
+
+# Keep repo-specific behavior here. Personal defaults belong in ~/.codex/config.toml.

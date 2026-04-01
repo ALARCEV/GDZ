@@ -1,0 +1,238 @@
+{
+  "project_name": "Школьный ассистент",
+  "document_type": "MVP funnel and product architecture",
+  "version": "2.0",
+  "updated_at": "2026-04-01",
+  "core_strategy": {
+    "model": "utility_first_acquisition",
+    "primary_goal": "Collect a parent-led user base through free real educational value",
+    "launch_phase": {
+      "type": "free",
+      "duration_months": [
+        1,
+        3
+      ],
+      "funded_by_founder": true
+    },
+    "monetization_phase": {
+      "type": "cost_based_access",
+      "margin_percent_range": [
+        5,
+        10
+      ],
+      "units": [
+        "10_days",
+        "50_requests",
+        "100_requests"
+      ],
+      "future_pro_addons": [
+        "obsidian_export",
+        "study_plans",
+        "family_mode",
+        "progress_reports"
+      ]
+    }
+  },
+  "users": {
+    "primary": "parent",
+    "secondary": "student",
+    "roles": [
+      "guest",
+      "parent",
+      "student",
+      "admin"
+    ],
+    "mvp_scope": {
+      "parent_to_child_ratio": "1_to_1",
+      "grades_focus": "1_to_6_or_1_to_7",
+      "subjects": "all_school_subjects"
+    }
+  },
+  "funnel": {
+    "entry": {
+      "mode": "guest",
+      "friction": "minimal",
+      "screens": [
+        "landing",
+        "chat"
+      ],
+      "cta_examples": [
+        "Объяснить тему простыми словами",
+        "Разобрать фото из учебника",
+        "Помочь с домашним заданием"
+      ]
+    },
+    "value_moment": {
+      "free_answers_before_capture": [
+        1,
+        2
+      ],
+      "success_definition": [
+        "parent_feels_time_saved",
+        "parent_feels_less_stress",
+        "student_understands_better_than_from_textbook"
+      ]
+    },
+    "capture": {
+      "triggers": [
+        "save_chat",
+        "open_history",
+        "continue_after_limit",
+        "unlock_extended_photo_or_voice",
+        "get_parent_cheatsheet"
+      ],
+      "parent_fields": [
+        "name",
+        "role",
+        "child_grade",
+        "email",
+        "phone_optional"
+      ],
+      "student_fields": [
+        "role",
+        "age",
+        "email"
+      ],
+      "optional_login_methods": [
+        "yandex_one_tap"
+      ],
+      "not_primary_login": [
+        "telegram"
+      ]
+    },
+    "retention": {
+      "drivers": [
+        "saved_history",
+        "subject_reentry",
+        "topic_filters",
+        "continued_dialogs",
+        "parent_broadcasts"
+      ]
+    }
+  },
+  "feature_set": {
+    "input_modalities": [
+      "text",
+      "image",
+      "voice"
+    ],
+    "response_modes": [
+      "simple_explanation",
+      "step_by_step_solution",
+      "answer_with_reasoning",
+      "multiple_solution_paths",
+      "parent_help_mode"
+    ],
+    "history": {
+      "enabled_in_v1": true,
+      "grouping": [
+        "grade",
+        "subject",
+        "topic",
+        "chats"
+      ],
+      "filters": [
+        "date",
+        "month",
+        "subject",
+        "topic",
+        "role"
+      ]
+    },
+    "math_rendering": {
+      "policy": "do_not_use_generative_images_for_precision_math",
+      "render_pipeline": "math_notation_to_svg_or_png",
+      "style": "white_canvas_black_text"
+    }
+  },
+  "ai_layer": {
+    "prompt_profiles": "by_grade",
+    "boundaries": [
+      "stay_within_school_program",
+      "simplify_without_distortion",
+      "speak_to_parent_and_child",
+      "avoid_only_giving_answer_without_logic"
+    ],
+    "image_processing": "vision_model_without_separate_ocr_chain_in_mvp",
+    "voice_processing": "speech_to_text_then_llm"
+  },
+  "data_model": {
+    "entities": [
+      "user",
+      "child_profile",
+      "guest_session",
+      "chat",
+      "message",
+      "attachment",
+      "quota_plan",
+      "consent_log",
+      "broadcast_campaign"
+    ]
+  },
+  "admin_panel": {
+    "modules": [
+      "dashboard",
+      "quota_control",
+      "prompt_profiles",
+      "user_crm",
+      "content_messages",
+      "manual_request_crediting",
+      "abuse_control"
+    ],
+    "core_metrics": [
+      "dau",
+      "wau",
+      "guest_to_lead_conversion",
+      "lead_to_active_conversion",
+      "usage_by_subject",
+      "usage_by_grade",
+      "cost_by_user"
+    ]
+  },
+  "consent_and_comms": {
+    "sequence": "value_first_capture_second",
+    "required_consents": [
+      "personal_data_processing"
+    ],
+    "separate_consents": [
+      "marketing_messages"
+    ],
+    "stored_fields": [
+      "consent_type",
+      "text_version",
+      "timestamp",
+      "source"
+    ]
+  },
+  "brand": {
+    "approach": "neutral_parent_friendly_brand",
+    "naming_constraints": [
+      "russian_word_or_natural_russian_sound",
+      "2_to_3_syllables",
+      "easy_pronunciation",
+      "clean_transliteration"
+    ]
+  },
+  "roadmap": {
+    "v1": [
+      "guest_chat",
+      "text_image_voice",
+      "grade_prompts",
+      "history",
+      "capture_after_value",
+      "admin_limits"
+    ],
+    "v2": [
+      "yandex_login",
+      "cost_based_packages",
+      "crm_segments",
+      "improved_history"
+    ],
+    "v3": [
+      "obsidian_export",
+      "study_plans",
+      "family_mode",
+      "progress_analytics"
+    ]
+  }
+}

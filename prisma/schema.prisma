@@ -1,0 +1,275 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  PARENT
+  STUDENT
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  DORMANT
+  BLOCKED
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum AttachmentKind {
+  IMAGE
+  VOICE
+}
+
+enum AttachmentStatus {
+  PENDING
+  READY
+  FAILED
+}
+
+enum ConsentType {
+  PERSONAL_DATA_PROCESSING
+  MARKETING_MESSAGES
+}
+
+enum CaptureTrigger {
+  SAVE_CHAT
+  OPEN_HISTORY
+  QUOTA_LIMIT
+  UNLOCK_MODALITY
+  PARENT_CHEATSHEET
+}
+
+enum CaptureStatus {
+  SHOWN
+  STARTED
+  COMPLETED
+  DISMISSED
+}
+
+model User {
+  id                String           @id @default(cuid())
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  role              UserRole
+  name              String
+  email             String?          @unique
+  phone             String?
+  authProvider      String?
+  billingPlanCode   String?
+  status            UserStatus       @default(ACTIVE)
+  studentAge        Int?
+  isGuestConverted  Boolean          @default(false)
+  childProfiles     ChildProfile[]
+  chats             Chat[]
+  usageEvents       UsageEvent[]
+  consentLogs       ConsentLog[]
+  captureEvents     CaptureEvent[]   @relation("CaptureRegisteredUser")
+  convertedSessions GuestSession[]   @relation("GuestSessionUpgradedUser")
+
+  @@index([role])
+  @@index([status])
+}
+
+model GuestSession {
+  id               String          @id @default(cuid())
+  createdAt        DateTime        @default(now())
+  expiresAt        DateTime
+  fingerprintHash  String?
+  utmSource        String?
+  utmCampaign      String?
+  locale           String?
+  lastSeenAt       DateTime        @default(now())
+  upgradedToUserId String?
+  upgradedAt       DateTime?
+  chats            Chat[]
+  usageEvents      UsageEvent[]
+  consentLogs      ConsentLog[]
+  captureEvents    CaptureEvent[]
+  upgradedToUser   User?           @relation("GuestSessionUpgradedUser", fields: [upgradedToUserId], references: [id])
+
+  @@index([expiresAt])
+  @@index([fingerprintHash])
+  @@index([lastSeenAt])
+}
+
+model ChildProfile {
+  id         String    @id @default(cuid())
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  parentId   String
+  grade      Int
+  firstName  String?
+  chats      Chat[]
+  parent     User      @relation(fields: [parentId], references: [id], onDelete: Cascade)
+
+  @@unique([parentId])
+  @@index([grade])
+}
+
+model Chat {
+  id             String        @id @default(cuid())
+  ownerUserId    String?
+  guestSessionId String?
+  childProfileId String?
+  grade          Int?
+  subject        String?
+  topic          String?
+  title          String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  archivedAt     DateTime?
+  ownerUser      User?         @relation(fields: [ownerUserId], references: [id], onDelete: SetNull)
+  guestSession   GuestSession? @relation(fields: [guestSessionId], references: [id], onDelete: SetNull)
+  childProfile   ChildProfile? @relation(fields: [childProfileId], references: [id], onDelete: SetNull)
+  messages       Message[]
+  attachments    Attachment[]
+  usageEvents    UsageEvent[]
+
+  /// Ownership invariant is enforced by SQL migration check constraint:
+  /// exactly one of ownerUserId or guestSessionId must be set.
+
+  @@index([ownerUserId])
+  @@index([guestSessionId])
+  @@index([childProfileId])
+  @@index([grade, subject, topic])
+  @@index([updatedAt])
+}
+
+model Message {
+  id               String        @id @default(cuid())
+  chatId           String
+  role             MessageRole
+  messageType      String
+  contentText      String
+  renderedMathHtml String?
+  tokenIn          Int?
+  tokenOut         Int?
+  costEstimate     Decimal?      @db.Decimal(12, 6)
+  createdAt        DateTime      @default(now())
+  chat             Chat          @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  attachments      Attachment[]
+
+  @@index([chatId, createdAt])
+  @@index([role])
+}
+
+model Attachment {
+  id              String           @id @default(cuid())
+  chatId          String
+  messageId       String?
+  kind            AttachmentKind
+  status          AttachmentStatus @default(PENDING)
+  fileKey         String
+  fileUrl         String
+  mimeType        String
+  sizeBytes       BigInt
+  durationSeconds Int?
+  createdAt       DateTime         @default(now())
+  chat            Chat             @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  message         Message?         @relation(fields: [messageId], references: [id], onDelete: SetNull)
+
+  @@index([chatId])
+  @@index([messageId])
+  @@index([kind, status])
+}
+
+model UsageEvent {
+  id              String        @id @default(cuid())
+  userId          String?
+  guestSessionId  String?
+  chatId          String?
+  eventType       String
+  quantity        Int           @default(1)
+  unit            String?
+  modelName       String?
+  tokenIn         Int?
+  tokenOut        Int?
+  estimatedCost   Decimal?      @db.Decimal(12, 6)
+  createdAt       DateTime      @default(now())
+  user            User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  guestSession    GuestSession? @relation(fields: [guestSessionId], references: [id], onDelete: SetNull)
+  chat            Chat?         @relation(fields: [chatId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([guestSessionId])
+  @@index([chatId])
+  @@index([eventType, createdAt])
+}
+
+model QuotaPolicy {
+  id                 String   @id @default(cuid())
+  name               String   @unique
+  userSegment        String
+  dailyMessages      Int?
+  dailyImages        Int?
+  dailyVoiceMinutes  Int?
+  monthlyMessages    Int?
+  saveHistoryEnabled Boolean  @default(false)
+  captureAfterValue  Int      @default(1)
+  softLimit          Boolean  @default(true)
+  billingPlanCode    String?
+  active             Boolean  @default(true)
+
+  @@index([userSegment, active])
+}
+
+model ConsentLog {
+  id             String        @id @default(cuid())
+  userId         String?
+  guestSessionId String?
+  consentType    ConsentType
+  accepted       Boolean
+  acceptedAt     DateTime      @default(now())
+  ipHash         String?
+  userAgentHash  String?
+  policyVersion  String
+  user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  guestSession   GuestSession? @relation(fields: [guestSessionId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([guestSessionId])
+  @@index([consentType, acceptedAt])
+}
+
+model CaptureEvent {
+  id               String         @id @default(cuid())
+  guestSessionId   String
+  registeredUserId String?
+  trigger          CaptureTrigger
+  status           CaptureStatus
+  metadataJson     Json?
+  createdAt        DateTime       @default(now())
+  guestSession     GuestSession   @relation(fields: [guestSessionId], references: [id], onDelete: Cascade)
+  registeredUser   User?          @relation("CaptureRegisteredUser", fields: [registeredUserId], references: [id], onDelete: SetNull)
+
+  @@index([guestSessionId, createdAt])
+  @@index([registeredUserId])
+  @@index([trigger, status])
+}
+
+model PromptProfile {
+  id                 String   @id @default(cuid())
+  active             Boolean  @default(true)
+  gradeFrom          Int
+  gradeTo            Int
+  mode               String
+  label              String
+  systemPrompt       String
+  parentOverlayPrompt String?
+  subjectOverridesJson Json?
+  updatedAt          DateTime @updatedAt
+
+  @@index([active])
+  @@index([gradeFrom, gradeTo])
+  @@index([mode])
+}
